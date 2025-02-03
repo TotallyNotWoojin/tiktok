@@ -98,6 +98,8 @@ interface Video {
   id: string;
   url: string;
   description: string;
+  category?: string;
+  hashtags?: { id: string; name: string }[];
 }
 
 export function VideoCard({ video, isActive }: { video: Video; isActive: boolean }) {
@@ -113,6 +115,11 @@ export function VideoCard({ video, isActive }: { video: Video; isActive: boolean
     }
   }
 
+  const extractHashtags = (text: string) => {
+    const hashtagRegex = /#[\w]+/g;
+    return text?.match(hashtagRegex) || [];
+  };
+
   return (
     <div ref={ref} className="h-screen snap-start">
       <ReactPlayer
@@ -122,11 +129,25 @@ export function VideoCard({ video, isActive }: { video: Video; isActive: boolean
         width="100%"
         height="100%"
       />
-      <div className="absolute bottom-0 left-0 p-4 bg-gradient-to-t from-black/60">
-        <p className="text-white">{video.description}</p>
-        <button onClick={handleLike} className="mt-2 p-2 bg-red-500 text-white rounded">
-          {liked ? 'Liked' : 'Like'}
-        </button>
+      <div className="absolute bottom-0 left-0 p-4 bg-gradient-to-t from-black/60 w-full">
+        {video.category && (
+          <span className="inline-block px-2 py-1 bg-blue-500 text-white rounded-full text-sm mb-2">
+            {video.category}
+          </span>
+        )}
+        <p className="text-white mb-2">{video.description}</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {video.hashtags?.map((tag) => (
+            <span key={tag.id} className="text-blue-400">
+              #{tag.name}
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <button onClick={handleLike} className="p-2 bg-red-500 text-white rounded">
+            {liked ? 'Liked' : 'Like'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -136,6 +157,18 @@ export function VideoCard({ video, isActive }: { video: Video; isActive: boolean
 export function UploadForm() {
   const router = useRouter()
   const [uploading, setUploading] = useState(false)
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
+
+  const categories = [
+    'Comedy', 'Music', 'Dance', 'Sports', 'Food', 
+    'Fashion', 'Beauty', 'Education', 'Travel', 'Gaming'
+  ]
+
+  const extractHashtags = (text: string) => {
+    const hashtagRegex = /#[\w]+/g;
+    return Array.from(new Set(text.match(hashtagRegex) || []));
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return
@@ -143,6 +176,12 @@ export function UploadForm() {
     
     const formData = new FormData()
     formData.append('video', e.target.files[0])
+    formData.append('description', description)
+    formData.append('category', category)
+    
+    // Extract hashtags from description
+    const hashtags = extractHashtags(description)
+    formData.append('hashtags', JSON.stringify(hashtags))
 
     try {
       await fetch('/api/upload', {
