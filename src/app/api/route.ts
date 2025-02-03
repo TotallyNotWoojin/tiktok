@@ -140,7 +140,7 @@ export async function GET(request: Request) {
     }
 
     const formData = await request.formData()
-    const video = formData.get('video') as File
+    formData.get('video') as File
     const description = formData.get('description') as string
     const category = formData.get('category') as string
     const hashtagsJson = formData.get('hashtags') as string
